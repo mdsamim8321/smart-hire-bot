@@ -1,0 +1,149 @@
+*{
+    margin: 0;
+    padding: 0;
+   box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0f172a; /* Professional Dark Background */
+    color: #e2e8f0;
+}
+
+.container {
+    width: 1000px;
+    height: 600px;
+    display: flex;
+    background: #1e293b;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #334155;
+}
+
+/* LEFT PANEL - Branding */
+.left {
+    width: 45%;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    text-align: center;
+    padding: 60px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.left::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('https://www.transparenttextures.com/patterns/cubes.png');
+    opacity: 0.1;
+}
+
+.left h1 {
+    font-size: 42px;
+    margin-bottom: 15px;
+    font-weight: 800;
+    z-index: 1;
+}
+
+.left p {
+    font-size: 18px;
+    margin-bottom: 40px;
+    opacity: 0.9;
+    z-index: 1;
+}
+
+.left img {
+    width: 250px;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.3));
+    z-index: 1;
+    transition: transform 0.5s ease;
+}
+
+.left:hover img {
+    transform: scale(1.05) rotate(-2deg);
+}
+
+/* RIGHT PANEL - Form */
+.right {
+    width: 55%;
+    padding: 60px 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #1e293b;
+}
+
+.right h2 {
+    font-size: 32px;
+    margin-bottom: 35px;
+    color: #f8fafc;
+    font-weight: 700;
+}
+
+.right input,
+.right select {
+    width: 100%;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border: 2px solid #334155;
+    background: #0f172a;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.right input:focus,
+.right select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.right button {
+    width: 100%;
+    padding: 16px;
+    background: #3b82f6;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.right button:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+}
+
+.link {
+    margin-top: 30px;
+    font-size: 16px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.link a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.link a:hover {
+    text-decoration: underline;
+    color: #60a5fa;
+}

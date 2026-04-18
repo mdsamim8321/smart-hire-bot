@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SmartHire Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',     // Blue-500
+                        secondary: '#2563eb',   // Blue-600
+                        accent: '#60a5fa',      // Blue-400
+                        dark: '#0f172a',        // Slate-900
+                        surface: '#1e293b',     // Slate-800
+                        'surface-light': '#334155'
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-in': 'slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)' },
+                            '100%': { transform: 'translateX(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-item-active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white !important;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .modal-backdrop { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); }
+        
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; color: white; animation: slideIn 0.3s ease-out forwards; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .toast.success { background: #10b981; border: 1px solid #059669; }
+        .toast.error { background: #ef4444; border: 1px solid #dc2626; }
+        .toast.info { background: #3b82f6; border: 1px solid #2563eb; }
+    </style>
+</head>
+<body class="bg-dark text-slate-100 min-h-screen font-sans overflow-hidden">
+
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-72 glass-card border-r border-slate-800/50 flex flex-col p-6 z-50">
+        <div class="flex items-center gap-3 mb-10 text-primary text-2xl font-extrabold px-2">
+            <div class="w-10 h-10 bg-gradient-to-tr from-primary to-accent rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20 animate-pulse-slow">
+                <i data-lucide="bot" class="w-6 h-6"></i>
+            </div>
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">SmartHire Bot</span>
+        </div>
+
+        <nav class="flex-grow space-y-2 overflow-y-auto custom-scrollbar pr-2">
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Main</p>
+            <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center gap-4 p-3.5 rounded-2xl sidebar-item-active font-bold transition-all" data-section="dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard Overview
+            </a>
+            <a href="#" onclick="showSection('users')" class="nav-item flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800/50 font-bold transition-all" data-section="users">
+                <i data-lucide="users" class="w-5 h-5"></i> User Management
+            </a>
+            <a href="#" onclick="showSection('interviews')" class="nav-item flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800/50 font-bold transition-all" data-section="interviews">
+                <i data-lucide="video" class="w-5 h-5"></i> Interview Management
+            </a>
+            <a href="#" onclick="showSection('resumes')" class="nav-item flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800/50 font-bold transition-all" data-section="resumes">
+                <i data-lucide="file-text" class="w-5 h-5"></i> Resume & ATS
+            </a>
+            
+           
+        </nav>
+
+        <div class="pt-6 border-t border-slate-800/50">
+            <div class="flex items-center gap-3 p-2 bg-slate-800/30 rounded-2xl border border-slate-700/30">
+                <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold">AD</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold truncate">Super Admin</p>
+                    <p class="text-[10px] text-slate-500 truncate">admin@smarthire.ai</p>
+                </div>
+                <button onclick="window.location.href='/'" class="text-slate-500 hover:text-red-500 transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 custom-scrollbar relative">
+        <!-- Background Decoration (Blue theme) -->
+        <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 blur-[150px] rounded-full -z-10"></div>
+        <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full -z-10"></div>
+
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 id="section-title" class="text-3xl font-black text-white tracking-tight">Dashboard Overview</h1>
+                <p id="section-subtitle" class="text-slate-400 font-medium">Welcome back! Here's your platform summary.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="w-12 h-12 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-primary transition-all relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sections Container -->
+        <div id="sections-container">
+            
+            <!-- 1. DASHBOARD OVERVIEW -->
+            <section id="section-dashboard" class="section-content animate-fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <div class="glass-card p-6 rounded-[28px] border-slate-800/50 hover:border-primary/50 transition-all group">
+                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total Users</p>
+                        <div class="flex items-end justify-between">
+                            <h3 id="stat-total-users" class="text-3xl font-black text-white">...</h3>
+                            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                <i data-lucide="users" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-[28px] border-slate-800/50 hover:border-green-500/50 transition-all group">
+                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Active Users</p>
+                        <div class="flex items-end justify-between">
+                            <h3 id="stat-active-users" class="text-3xl font-black text-white">...</h3>
+                            <div class="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="user-check" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-[28px] border-slate-800/50 hover:border-purple-500/50 transition-all group">
+                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total Interviews</p>
+                        <div class="flex items-end justify-between">
+                            <h3 id="stat-total-interviews" class="text-3xl font-black text-white">...</h3>
+                            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="video" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-[28px] border-slate-800/50 hover:border-yellow-500/50 transition-all group">
+                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Average Score</p>
+                        <div class="flex items-end justify-between">
+                            <h3 id="stat-avg-score" class="text-3xl font-black text-white">...</h3>
+                            <div class="w-12 h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="star" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-8 rounded-[32px]">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 class="text-xl font-black text-white">Platform Usage Trends</h3>
+                            <p class="text-sm text-slate-500">Monthly interview completion volume</p>
+                        </div>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. USER MANAGEMENT -->
+            <section id="section-users" class="section-content hidden animate-fade-in">
+                <div class="glass-card rounded-[32px] overflow-hidden">
+                    <div class="p-6 border-b border-slate-800/50 flex justify-between items-center bg-slate-900/30">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                            <input id="users-search" type="text" placeholder="Search users..." class="bg-slate-800 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-primary w-64" oninput="renderUsers()">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.location.href='/admin/api/export/users'" class="px-4 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Export CSV</button>
+                            <select id="users-role-filter" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 outline-none" onchange="renderUsers()">
+                                <option value="All">All Roles</option>
+                                <option value="admin">admin</option>
+                                <option value="user">user</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-800/30 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                <tr>
+                                    <th class="px-6 py-4">User Details</th>
+                                    <th class="px-6 py-4">Field / Target Role</th>
+                                    <th class="px-6 py-4">System Role</th>
+                                    <th class="px-6 py-4">Status</th>
+                                    <th class="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-slate-800/50">
+                                <!-- Users injected here via AJAX -->
+                                <tr><td colspan="5" class="p-8 text-center text-slate-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto"></i></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. INTERVIEW MANAGEMENT -->
+            <section id="section-interviews" class="section-content hidden animate-fade-in">
+                <div class="grid grid-cols-12 gap-8">
+                    <div class="col-span-12 lg:col-span-4 space-y-6">
+                        <div class="glass-card p-6 rounded-[32px]">
+                            <h3 class="text-lg font-black text-white mb-6 flex items-center gap-2">
+                                <i data-lucide="folder" class="w-5 h-5 text-primary"></i> Categories
+                            </h3>
+                            <div class="space-y-2" id="question-categories">
+                                <div class="p-4 text-center text-slate-500 font-bold text-sm">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="glass-card p-6 rounded-[32px] bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20 text-center">
+                            <i data-lucide="sparkles" class="w-8 h-8 text-primary mx-auto mb-4 animate-pulse"></i>
+                            <h3 class="text-lg font-black text-white mb-2">AI Generator</h3>
+                            <p class="text-xs text-slate-400 mb-6">Generate role-specific questions instantly.</p>
+                            <button onclick="generateQuestion()" class="w-full py-3 bg-primary hover:bg-secondary text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">Generate Now</button>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-8 glass-card p-6 rounded-[32px]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-black text-white">Question Bank</h3>
+                            <div class="flex gap-2">
+                                <button id="btn-bulk-question" onclick="openBulkQuestionModal()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-700 flex items-center gap-2"><i data-lucide="list-plus" class="w-4 h-4"></i> Bulk Add</button>
+                                <button id="btn-add-question" onclick="openQuestionModal()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-700 flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Add Question</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3 mb-6">
+                            <div class="relative flex-1 min-w-[220px]">
+                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                                <input id="questions-search" type="text" placeholder="Search questions..." class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-primary text-white" oninput="loadQuestions()">
+                            </div>
+                            <select id="questions-category" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 outline-none" onchange="loadQuestions()">
+                                <option value="All">All Categories</option>
+                                <option value="DSA">DSA</option>
+                                <option value="HR">HR</option>
+                                <option value="Aptitude">Aptitude</option>
+                                <option value="Role-based">Role-based</option>
+                            </select>
+                            <select id="questions-difficulty" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 outline-none" onchange="loadQuestions()">
+                                <option value="All">All Levels</option>
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </select>
+                            <button onclick="generateQuestion()" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-xl text-xs font-black shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> Generate
+                            </button>
+                        </div>
+                        <div id="questions-list" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. RESUME & ATS MANAGEMENT -->
+            <section id="section-resumes" class="section-content hidden animate-fade-in">
+                <div class="grid grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-3xl"><p class="text-xs font-black text-slate-500 uppercase mb-2">Avg ATS Score</p><h3 id="res-avg-score" class="text-3xl font-black text-white">...</h3></div>
+                    <div class="glass-card p-6 rounded-3xl"><p class="text-xs font-black text-slate-500 uppercase mb-2">Resumes Processed</p><h3 id="res-count" class="text-3xl font-black text-white">...</h3></div>
+                    <div class="glass-card p-6 rounded-3xl"><p class="text-xs font-black text-slate-500 uppercase mb-2">Top Missing Keyword</p><h3 id="res-top-keyword" class="text-2xl font-black text-primary mt-1">...</h3></div>
+                </div>
+                <div class="grid grid-cols-12 gap-6 mb-8">
+                    <div class="col-span-12 lg:col-span-7 glass-card p-6 rounded-[32px]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-black text-white">Missing Keywords Trends</h3>
+                            <button onclick="loadResumeKeywordTrends()" class="text-xs font-black text-primary hover:underline">Refresh</button>
+                        </div>
+                        <div class="h-52">
+                            <canvas id="keywordsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-5 glass-card p-6 rounded-[32px]">
+                        <h3 class="text-lg font-black text-white mb-4">ATS Insights</h3>
+                        <div class="space-y-3">
+                            <div class="p-4 bg-slate-800/40 rounded-2xl border border-slate-700/40">
+                                <p class="text-xs font-black text-slate-500 uppercase mb-1">Recommendation</p>
+                                <p class="text-sm text-slate-200 font-bold">Add quantifiable impact bullets and relevant keywords for the target role.</p>
+                            </div>
+                            <div class="p-4 bg-slate-800/40 rounded-2xl border border-slate-700/40">
+                                <p class="text-xs font-black text-slate-500 uppercase mb-1">Common Gap</p>
+                                <p class="text-sm text-slate-200 font-bold">Most resumes are missing system design and testing terms.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-[32px] overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-800/30 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                            <tr><th class="px-6 py-4">Candidate</th><th class="px-6 py-4">Target Role</th><th class="px-6 py-4">ATS Score</th><th class="px-6 py-4">Missing Keywords</th><th class="px-6 py-4 text-right">Actions</th></tr>
+                        </thead>
+                        <tbody id="resumes-table-body" class="divide-y divide-slate-800/50"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 5. ANALYTICS -->
+            <section id="section-analytics" class="section-content hidden animate-fade-in">
+                <div class="grid grid-cols-12 gap-8">
+                    <div class="col-span-12 lg:col-span-8 glass-card p-8 rounded-[32px]">
+                        <h3 class="text-xl font-black text-white mb-6">User Performance Trends (Top Fields)</h3>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl"><p class="text-[10px] font-black text-green-500 uppercase">Strongest Topic</p><p class="text-lg font-bold text-white mt-1">Frontend (React)</p></div>
+                            <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl"><p class="text-[10px] font-black text-red-500 uppercase">Weakest Topic</p><p class="text-lg font-bold text-white mt-1">System Design</p></div>
+                        </div>
+                        <div class="flex gap-2" id="popular-roles-container"></div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-4 glass-card p-6 rounded-[32px] flex flex-col">
+                        <h3 class="text-xl font-black text-white mb-6 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Leaderboard</h3>
+                        <div class="space-y-4 flex-grow" id="leaderboard-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. AI SYSTEM CONTROL -->
+            <section id="section-ai-control" class="section-content hidden animate-fade-in">
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="glass-card p-8 rounded-[32px]">
+                        <h3 class="text-xl font-black text-white mb-6">API Usage Monitoring</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between text-sm font-bold mb-2"><span class="text-slate-300">OpenAI API Quota</span><span class="text-primary">75%</span></div>
+                                <div class="h-3 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: 75%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm font-bold mb-2"><span class="text-slate-300">Whisper (Audio) Quota</span><span class="text-accent">40%</span></div>
+                                <div class="h-3 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-accent" style="width: 40%"></div></div>
+                            </div>
+                            <div class="pt-6 border-t border-slate-800/50">
+                                <label class="text-xs font-black text-slate-500 uppercase block mb-2">Per-User Limit (Questions/Day)</label>
+                                <input type="number" value="50" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-8 rounded-[32px] flex flex-col">
+                        <h3 class="text-xl font-black text-white mb-4">Prompt Customization</h3>
+
+                        <p class="text-xs text-slate-400 mb-4">Modify the base prompt injected into the AI interviewer.</p>
+                        <textarea id="setting-ai-prompt" class="w-full flex-grow bg-slate-800 border border-slate-700 rounded-xl p-4 text-sm text-slate-300 font-mono focus:outline-none focus:border-primary resize-none"></textarea>
+                        <button onclick="saveSettings({'ai_prompt': document.getElementById('setting-ai-prompt').value})" class="mt-4 py-3 bg-primary hover:bg-secondary text-white rounded-xl font-bold transition-all">Save Configuration</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. CHATBOT MONITORING -->
+            <section id="section-chatbot-monitor" class="section-content hidden animate-fade-in">
+                <div class="grid grid-cols-12 gap-8">
+                    <div class="col-span-4 space-y-6">
+                        <div class="glass-card p-6 rounded-[32px]">
+                            <h3 class="text-lg font-black text-white mb-4">Most Asked Queries</h3>
+                            <ul class="space-y-3 text-sm text-slate-300 font-medium">
+                                <li class="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl"><span>How to reset password?</span> <span class="text-primary font-black">124</span></li>
+                                <li class="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl"><span>Can I retake the test?</span> <span class="text-primary font-black">98</span></li>
+                                <li class="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl"><span>Where is my ATS score?</span> <span class="text-primary font-black">76</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-span-8 glass-card p-6 rounded-[32px] flex flex-col">
+                        <h3 class="text-xl font-black text-white mb-4">User Query Logs</h3>
+                        <div class="flex-grow overflow-y-auto custom-scrollbar space-y-3 pr-2 h-80" id="chat-logs-container">
+                            <!-- Mocked via JS -->
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-800/50">
+                            <p class="text-xs font-black text-slate-500 uppercase mb-2">Manual Response Override (Train Bot)</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="chat-train-input" placeholder="Type better response..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary text-white">
+                                <button onclick="trainBot()" class="px-6 bg-primary text-white font-bold rounded-xl hover:bg-secondary">Teach AI</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. SETTINGS -->
+            <section id="section-settings" class="section-content hidden animate-fade-in">
+                <div class="max-w-3xl mx-auto glass-card p-8 rounded-[32px]">
+                    <h3 class="text-2xl font-black text-white mb-8">Platform Settings</h3>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <h4 class="text-sm font-black text-slate-400 uppercase mb-4 tracking-widest">Configuration & Features</h4>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50">
+                                    <div><p class="font-bold text-white">Allow Public Registration</p><p class="text-xs text-slate-500">Users can sign up without invite</p></div>
+                                    <div id="setting-public-reg" class="w-12 h-6 bg-primary rounded-full relative cursor-pointer" onclick="this.classList.toggle('bg-slate-700'); this.classList.toggle('bg-primary'); this.children[0].classList.toggle('right-1'); this.children[0].classList.toggle('left-1');"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div></div>
+                                </div>
+                                <div class="flex items-center justify-between p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50">
+                                    <div><p class="font-bold text-white">Email Notifications</p><p class="text-xs text-slate-500">Send system alerts via email</p></div>
+                                    <div id="setting-email-notif" class="w-12 h-6 bg-primary rounded-full relative cursor-pointer" onclick="this.classList.toggle('bg-slate-700'); this.classList.toggle('bg-primary'); this.children[0].classList.toggle('right-1'); this.children[0].classList.toggle('left-1');"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-black text-slate-400 uppercase mb-4 tracking-widest">Interview Time Limits</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-300 block mb-2">Max Session Time (Mins)</label>
+                                    <input type="number" id="setting-max-time" value="45" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-300 block mb-2">Time per Question (Mins)</label>
+                                    <input type="number" id="setting-time-q" value="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-black text-slate-400 uppercase mb-4 tracking-widest">Appearance</h4>
+                            <select id="setting-theme" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
+                                <option value="dark_blue">Dark Theme (Blue Accent) - Active</option>
+                                <option value="dark_purple">Dark Theme (Purple Accent)</option>
+                                <option value="light">Light Theme</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="saveAllSettings()" class="w-full py-4 bg-primary hover:bg-secondary text-white rounded-2xl font-black shadow-xl transition-all">Save All Changes</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. ALERTS & SYSTEM HEALTH -->
+            <section id="section-health" class="section-content hidden animate-fade-in">
+                <div class="grid grid-cols-3 gap-6 mb-8" id="health-widgets">
+                    <!-- Injected via JS -->
+                </div>
+                <div class="grid grid-cols-12 gap-8">
+                    <div class="col-span-12 lg:col-span-6 glass-card p-6 rounded-[32px]">
+                        <h3 class="text-xl font-black text-white mb-4 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-red-500"></i> Error Logs</h3>
+                        <div class="space-y-3" id="error-logs-container"></div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-6 glass-card p-6 rounded-[32px]">
+                        <h3 class="text-xl font-black text-white mb-4 flex items-center gap-2"><i data-lucide="shield-alert" class="text-yellow-500"></i> Suspicious Activity</h3>
+                        <div class="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl mb-3">
+                            <p class="text-sm font-bold text-white">Multiple Failed Logins</p>
+                            <p class="text-xs text-slate-400">User ID #45 attempted 12 logins in 1 minute.</p>
+                            <button class="mt-2 text-xs text-yellow-500 font-bold hover:underline">Investigate</button>
+                        </div>
+                        <div class="p-4 bg-slate-800/50 rounded-2xl">
+                            <p class="text-sm font-bold text-white">Browser Tab Switching Detected</p>
+                            <p class="text-xs text-slate-400">Candidate "John Doe" switched tabs 5 times during test.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<!-- QUESTION MODAL -->
+<div id="question-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center">
+    <div class="glass-card w-full max-w-lg rounded-[32px] p-8 border border-slate-700/50 shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="question-modal-content">
+        <h3 class="text-2xl font-black text-white mb-6" id="question-modal-title">Add Question</h3>
+        <form id="question-form" onsubmit="saveQuestion(event)">
+            <input type="hidden" id="question-id">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-2">Category</label>
+                    <select id="modal-q-category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary" required>
+                        <option value="DSA">DSA</option>
+                        <option value="HR">HR / Behavioral</option>
+                        <option value="Aptitude">Aptitude</option>
+                        <option value="Role-based">Role-based</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-2">Difficulty</label>
+                    <select id="modal-q-difficulty" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary" required>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-2">Question Text</label>
+                    <textarea id="modal-q-text" rows="4" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary resize-none" placeholder="Enter the question here..." required></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeQuestionModal()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all">Cancel</button>
+                <button type="submit" class="px-6 py-3 bg-primary hover:bg-secondary text-white rounded-xl font-bold transition-all shadow-lg shadow-primary/20">Save Question</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BULK QUESTION MODAL -->
+<div id="bulk-question-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center">
+    <div class="glass-card w-full max-w-2xl rounded-[32px] p-8 border border-slate-700/50 shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="bulk-question-modal-content">
+        <h3 class="text-2xl font-black text-white mb-6">Bulk Add Questions</h3>
+        <form id="bulk-question-form" onsubmit="saveBulkQuestions(event)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-2">Category</label>
+                    <select id="bulk-q-category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary" required>
+                        <option value="DSA">DSA</option>
+                        <option value="HR">HR / Behavioral</option>
+                        <option value="Aptitude">Aptitude</option>
+                        <option value="Role-based">Role-based</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-2">Difficulty</label>
+                    <select id="bulk-q-difficulty" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary" required>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-8">
+                <label class="text-xs font-bold text-slate-400 block mb-2">Questions (1 per line)</label>
+                <textarea id="bulk-q-text" rows="9" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary resize-none" placeholder="e.g.\nExplain event loop in JavaScript.\nTell me about a time you handled conflict.\nSolve: Longest Palindromic Substring." required></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeBulkQuestionModal()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all">Cancel</button>
+                <button type="submit" class="px-6 py-3 bg-primary hover:bg-secondary text-white rounded-xl font-bold transition-all shadow-lg shadow-primary/20">Add Questions</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    // Initialize Icons
+    lucide.createIcons();
+
+    // Custom Toast Notification System
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = 'info';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'alert-circle';
+
+        toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${message}`;
+        container.appendChild(toast);
+        lucide.createIcons();
+
+        setTimeout(() => {
+            toast.style.animation = 'fadeIn 0.3s ease-in reverse forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function mockAction(msg) {
+        showToast(msg, 'info');
+    }
+
+    // Section Switching Logic
+    const titles = {
+        'dashboard': 'Dashboard Overview',
+        'users': 'User Management',
+        'interviews': 'Interview Management',
+        'resumes': 'Resume & ATS',
+        'analytics': 'Analytics'
+    };
+    const subtitles = {
+        'dashboard': 'Welcome back! Here\'s your platform summary.',
+        'users': 'Manage users, assign roles, and control access.',
+        'interviews': 'Configure question banks and AI generator.',
+        'resumes': 'Review uploaded resumes and ATS keyword matching.',
+        'analytics': 'Platform-wide insights and performance tracking.',
+        'ai-control': 'Monitor API quotas and customize interviewer prompts.',
+        'chatbot-monitor': 'Review user queries and train the bot manually.',
+        'settings': 'Global configuration and platform preferences.',
+        'health': 'Server status, error logs, and security alerts.'
+    };
+
+    async function showSection(sectionId) {
+        document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+        const activeSection = document.getElementById('section-' + sectionId);
+        if (activeSection) activeSection.classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('sidebar-item-active', 'font-bold');
+            item.classList.add('text-slate-400');
+            if (item.getAttribute('data-section') === sectionId) {
+                item.classList.add('sidebar-item-active', 'font-bold');
+                item.classList.remove('text-slate-400');
+            }
+        });
+
+        document.getElementById('section-title').textContent = titles[sectionId];
+        document.getElementById('section-subtitle').textContent = subtitles[sectionId];
+
+        if (sectionId === 'dashboard') {
+            await loadStats();
+            initUsageChart();
+        }
+        if (sectionId === 'users') {
+            await loadUsers();
+        }
+        if (sectionId === 'interviews') {
+            await loadQuestionStats();
+            await loadQuestions();
+        }
+        if (sectionId === 'resumes') {
+            await loadResumes();
+            await loadResumeKeywordTrends();
+        }
+        if (sectionId === 'analytics') {
+            await loadAnalytics();
+        }
+        if (sectionId === 'health') {
+            await loadHealth();
+        }
+        if (sectionId === 'chatbot-monitor') {
+            await loadChatLogs();
+        }
+        if (sectionId === 'settings' || sectionId === 'ai-control') {
+            await loadSettings();
+        }
+    }
+
+    // --- API FETCH FUNCTIONS ---
+
+    async function loadStats() {
+        try {
+            const res = await fetch('/admin/api/stats');
+            const data = await res.json();
+            document.getElementById('stat-total-users').textContent = data.total_users;
+            document.getElementById('stat-active-users').textContent = data.active_users;
+            document.getElementById('stat-total-interviews').textContent = data.total_interviews;
+            document.getElementById('stat-avg-score').textContent = data.avg_score + '%';
+            window.chartData = data.trends;
+            if (usageChart && window.chartData) {
+                if (Array.isArray(window.chartData.labels)) usageChart.data.labels = window.chartData.labels;
+                if (Array.isArray(window.chartData.data) && usageChart.data.datasets?.[0]) usageChart.data.datasets[0].data = window.chartData.data;
+                usageChart.update();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadUsers() {
+        try {
+            const res = await fetch('/admin/api/users');
+            const users = await res.json();
+            window.usersCache = Array.isArray(users) ? users : [];
+            renderUsers();
+        } catch (e) {
+            console.error(e);
+            showToast('User list load failed', 'error');
+        }
+    }
+
+    function renderUsers() {
+        const tbody = document.getElementById('users-table-body');
+        const q = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
+        const roleFilter = document.getElementById('users-role-filter')?.value || 'All';
+        const users = Array.isArray(window.usersCache) ? window.usersCache : [];
+
+        const filtered = users.filter(u => {
+            const matchesQuery = !q || (String(u.name || '').toLowerCase().includes(q) || String(u.email || '').toLowerCase().includes(q) || String(u.field || '').toLowerCase().includes(q));
+            const matchesRole = roleFilter === 'All' || String(u.role) === roleFilter;
+            return matchesQuery && matchesRole;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-500 font-bold">No users found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        filtered.forEach(user => {
+            const statusColor = user.status === 'active' ? 'text-green-500' : 'text-red-500';
+            const roleColor = user.role === 'admin' ? 'text-primary border-primary' : 'text-slate-400 border-slate-700';
+            const nextRole = user.role === 'admin' ? 'user' : 'admin';
+            const nextStatus = user.status === 'active' ? 'blocked' : 'active';
+
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-800/20 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white">${String(user.name || 'U').charAt(0)}</div>
+                            <div><p class="font-bold text-white">${user.name || 'Unknown'}</p><p class="text-xs text-slate-500">${user.email || ''}</p></div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-300 font-medium">${user.field || 'N/A'}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 text-[10px] uppercase font-black rounded-lg border ${roleColor}">${user.role}</span></td>
+                    <td class="px-6 py-4 font-bold ${statusColor} capitalize">${user.status}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="updateRole(${user.id}, '${nextRole}')" class="text-xs bg-slate-800 hover:bg-primary text-white px-3 py-1.5 rounded-lg transition-all">Make ${nextRole === 'admin' ? 'Admin' : 'User'}</button>
+                        <button onclick="toggleBlock(${user.id}, '${nextStatus}')" class="text-xs bg-slate-800 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg transition-all">${nextStatus === 'blocked' ? 'Block' : 'Unblock'}</button>
+                        <button onclick="deleteUser(${user.id})" class="text-xs bg-slate-800 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition-all">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function loadQuestions() {
+        try {
+            const q = (document.getElementById('questions-search')?.value || '').trim();
+            const category = document.getElementById('questions-category')?.value || 'All';
+            const difficulty = document.getElementById('questions-difficulty')?.value || 'All';
+
+            const params = new URLSearchParams();
+            if (q) params.set('q', q);
+            if (category) params.set('category', category);
+            if (difficulty) params.set('difficulty', difficulty);
+
+            const res = await fetch('/admin/api/questions?' + params.toString());
+            const questions = await res.json();
+            window.questionsCache = Array.isArray(questions) ? questions : [];
+            const list = document.getElementById('questions-list');
+            list.innerHTML = '';
+            if (!Array.isArray(questions) || questions.length === 0) {
+                list.innerHTML = `<div class="p-10 text-center text-slate-500 font-bold">No questions found</div>`;
+                await loadQuestionStats();
+                return;
+            }
+
+            questions.forEach(item => {
+                list.innerHTML += `
+                    <div class="p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50 flex justify-between items-center group hover:border-primary/50 transition-all">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-black text-slate-400 bg-slate-800 px-2 py-0.5 rounded">#Q${item.id}</span>
+                                <span class="text-[10px] font-black text-slate-400 bg-slate-800 px-2 py-0.5 rounded">${item.category}</span>
+                                <span class="text-[10px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded">${item.difficulty}</span>
+                            </div>
+                            <p class="text-sm font-bold text-white">${item.text}</p>
+                            ${item.created_at ? `<p class="text-[10px] text-slate-500 mt-1">${item.created_at}</p>` : ``}
+                        </div>
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openQuestionModal(${item.id})" class="p-2 hover:bg-slate-700 text-primary rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="deleteQuestion(${item.id})" class="p-2 hover:bg-slate-700 text-red-500 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+            await loadQuestionStats();
+        } catch (e) {
+            console.error(e);
+            showToast('Question list load failed', 'error');
+        }
+    }
+
+    async function loadQuestionStats() {
+        try {
+            const res = await fetch('/admin/api/questions/stats');
+            const stats = await res.json();
+            renderQuestionCategories(stats);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function renderQuestionCategories(stats) {
+        const container = document.getElementById('question-categories');
+        if (!container) return;
+
+        const byCategory = Array.isArray(stats?.by_category) ? stats.by_category : [];
+        const total = Number(stats?.total || 0);
+
+        const selected = document.getElementById('questions-category')?.value || 'All';
+        const makeBtn = (cat, label, count, isActive) => {
+            const activeClass = isActive ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-slate-800 text-slate-400';
+            const badgeClass = isActive ? 'bg-primary text-white' : 'bg-slate-700 text-white';
+            return `
+                <button class="w-full flex justify-between p-3 rounded-xl font-bold ${activeClass}" onclick="selectQuestionCategory('${cat.replace(/'/g, "\\'")}')">
+                    <span>${label}</span>
+                    <span class="${badgeClass} px-2 py-0.5 rounded-lg text-[10px]">${count}</span>
+                </button>
+            `;
+        };
+
+        const mapLabel = (cat) => {
+            if (cat === 'HR') return 'HR / Behavioral';
+            return cat;
+        };
+
+        container.innerHTML = '';
+        container.innerHTML += makeBtn('All', 'All', total, selected === 'All');
+        byCategory.forEach(row => {
+            const cat = String(row.category || '').trim();
+            if (!cat) return;
+            const count = Number(row.count || 0);
+            container.innerHTML += makeBtn(cat, mapLabel(cat), count, selected === cat);
+        });
+        lucide.createIcons();
+    }
+
+    function selectQuestionCategory(cat) {
+        const select = document.getElementById('questions-category');
+        if (!select) return;
+        select.value = cat;
+        loadQuestions();
+    }
+
+    async function loadResumes() {
+        try {
+            const res = await fetch('/admin/api/resumes');
+            const resumes = await res.json();
+            const tbody = document.getElementById('resumes-table-body');
+            tbody.innerHTML = '';
+            resumes.forEach(r => {
+                const color = r.ats_score >= 80 ? 'text-green-500' : r.ats_score >= 60 ? 'text-yellow-500' : 'text-red-500';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/20">
+                        <td class="px-6 py-4 font-bold text-white">${r.candidate}</td>
+                        <td class="px-6 py-4 text-slate-300">${r.role}</td>
+                        <td class="px-6 py-4 font-black ${color}">${r.ats_score}%</td>
+                        <td class="px-6 py-4"><div class="flex gap-1 flex-wrap">${r.missing_keys.map(k => `<span class="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] rounded border border-red-500/20">${k}</span>`).join('')}</div></td>
+                        <td class="px-6 py-4 text-right"><button class="text-xs font-bold text-primary hover:underline">View PDF</button></td>
+                    </tr>
+                `;
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadAnalytics() {
+        try {
+            const res = await fetch('/admin/api/analytics');
+            const data = await res.json();
+            
+            // Leaderboard
+            const lbContainer = document.getElementById('leaderboard-container');
+            lbContainer.innerHTML = '';
+            data.leaderboard.forEach((user, index) => {
+                lbContainer.innerHTML += `
+                    <div class="flex items-center gap-4 p-3 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                        <div class="w-8 h-8 rounded-full ${index === 0 ? 'bg-yellow-500 text-dark' : 'bg-slate-700 text-white'} flex items-center justify-center font-black">${index+1}</div>
+                        <div class="flex-1"><p class="text-sm font-bold text-white">${user.name}</p><p class="text-[10px] text-slate-400">${user.role}</p></div>
+                        <div class="text-lg font-black text-primary">${user.score}</div>
+                    </div>
+                `;
+            });
+
+            // Popular Roles
+            const prContainer = document.getElementById('popular-roles-container');
+            prContainer.innerHTML = '';
+            data.popular_roles.forEach(role => {
+                prContainer.innerHTML += `<span class="px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-xl text-xs font-bold">${role.role} (${role.count})</span>`;
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadHealth() {
+        try {
+            const res = await fetch('/admin/api/health');
+            const data = await res.json();
+            
+            document.getElementById('health-widgets').innerHTML = `
+                <div class="glass-card p-6 rounded-3xl"><p class="text-xs font-black text-slate-500 uppercase mb-2">CPU Usage</p><h3 class="text-3xl font-black ${data.cpu > 80 ? 'text-red-500' : 'text-green-500'}">${data.cpu}%</h3></div>
+                <div class="glass-card p-6 rounded-3xl"><p class="text-xs font-black text-slate-500 uppercase mb-2">RAM Usage</p><h3 class="text-3xl font-black ${data.ram > 80 ? 'text-red-500' : 'text-green-500'}">${data.ram}%</h3></div>
+                <div class="glass-card p-6 rounded-3xl"><p class="text-xs font-black text-slate-500 uppercase mb-2">API Latency</p><h3 class="text-3xl font-black text-primary">${data.api_latency}ms</h3></div>
+            `;
+
+            const errContainer = document.getElementById('error-logs-container');
+            errContainer.innerHTML = '';
+            data.errors.forEach(err => {
+                errContainer.innerHTML += `
+                    <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-3 items-start">
+                        <i data-lucide="x-circle" class="w-4 h-4 text-red-500 mt-0.5"></i>
+                        <div><p class="text-xs font-bold text-white">[${err.module}] ${err.msg}</p><p class="text-[10px] text-slate-500">${err.time}</p></div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadChatLogs() {
+        const container = document.getElementById('chat-logs-container');
+        try {
+            const res = await fetch('/admin/api/chat_logs');
+            const logs = await res.json();
+            container.innerHTML = '';
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-500">No logs found.</p>';
+                return;
+            }
+            logs.forEach(log => {
+                container.innerHTML += `
+                    <div class="p-3 bg-slate-800/50 rounded-xl">
+                        <p class="text-xs text-slate-400 mb-1">User ID #${log.user_id} • ${log.timestamp}</p>
+                        <p class="text-sm text-white">"${log.user_query}"</p>
+                        <p class="text-xs text-primary mt-2 flex items-center gap-1"><i data-lucide="bot" class="w-3 h-3"></i> AI: "${log.ai_response}"</p>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function trainBot() {
+        const input = document.getElementById('chat-train-input');
+        if (!input.value.trim()) return;
+        try {
+            const res = await fetch('/admin/api/chat_logs/train', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ response: input.value.trim() })
+            });
+            if (res.ok) {
+                showToast('Bot trained successfully', 'success');
+                input.value = '';
+                loadChatLogs();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadSettings() {
+        try {
+            const res = await fetch('/admin/api/settings');
+            const data = await res.json();
+            
+            if (data.ai_prompt) document.getElementById('setting-ai-prompt').value = data.ai_prompt;
+            if (data.max_session_time) document.getElementById('setting-max-time').value = data.max_session_time;
+            if (data.time_per_question) document.getElementById('setting-time-q').value = data.time_per_question;
+            if (data.theme) document.getElementById('setting-theme').value = data.theme;
+
+            // Toggles
+            const pubReg = document.getElementById('setting-public-reg');
+            if (data.public_registration === 'true' && pubReg.classList.contains('bg-slate-700')) pubReg.click();
+            if (data.public_registration === 'false' && pubReg.classList.contains('bg-primary')) pubReg.click();
+
+            const emailNotif = document.getElementById('setting-email-notif');
+            if (data.email_notifications === 'true' && emailNotif.classList.contains('bg-slate-700')) emailNotif.click();
+            if (data.email_notifications === 'false' && emailNotif.classList.contains('bg-primary')) emailNotif.click();
+
+        } catch (e) { console.error(e); }
+    }
+
+    async function saveSettings(dataObj) {
+        try {
+            const res = await fetch('/admin/api/settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataObj)
+            });
+            if (res.ok) showToast('Settings saved successfully!', 'success');
+            else showToast('Failed to save settings', 'error');
+        } catch (e) { console.error(e); }
+    }
+
+    function saveAllSettings() {
+        const pubReg = document.getElementById('setting-public-reg').classList.contains('bg-primary') ? 'true' : 'false';
+        const emailNotif = document.getElementById('setting-email-notif').classList.contains('bg-primary') ? 'true' : 'false';
+        saveSettings({
+            public_registration: pubReg,
+            email_notifications: emailNotif,
+            max_session_time: document.getElementById('setting-max-time').value,
+            time_per_question: document.getElementById('setting-time-q').value,
+            theme: document.getElementById('setting-theme').value
+        });
+    }
+
+    // --- ACTION FUNCTIONS ---
+
+    async function updateRole(userId, newRole) {
+        try {
+            const res = await fetch(`/admin/api/users/${userId}/role`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: newRole })
+            });
+            if (res.ok) { showToast(`User role updated to ${newRole}`, 'success'); loadUsers(); }
+            else showToast('Failed to update role', 'error');
+        } catch (e) { console.error(e); }
+    }
+
+    async function toggleBlock(userId, newStatus) {
+        try {
+            const res = await fetch(`/admin/api/users/${userId}/status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) { showToast(`User is now ${newStatus}`, 'success'); loadUsers(); }
+            else showToast('Failed to update status', 'error');
+        } catch (e) { console.error(e); }
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm("Are you sure you want to delete this user permanently?")) return;
+        try {
+            const res = await fetch(`/admin/api/users/${userId}`, { method: 'DELETE' });
+            if (res.ok) { showToast('User deleted successfully', 'success'); loadUsers(); }
+            else showToast('Failed to delete user', 'error');
+        } catch (e) { console.error(e); }
+    }
+
+    // --- QUESTION MANAGEMENT ---
+
+    function openQuestionModal(id = null) {
+        const modal = document.getElementById('question-modal');
+        const content = document.getElementById('question-modal-content');
+        const form = document.getElementById('question-form');
+        const title = document.getElementById('question-modal-title');
+        
+        form.reset();
+        document.getElementById('question-id').value = '';
+        title.textContent = 'Add Question';
+
+        if (id) {
+            const q = (window.questionsCache || []).find(x => x.id === id);
+            if (q) {
+                document.getElementById('question-id').value = q.id;
+                document.getElementById('modal-q-category').value = q.category;
+                document.getElementById('modal-q-difficulty').value = q.difficulty;
+                document.getElementById('modal-q-text').value = q.text;
+                title.textContent = 'Edit Question';
+            }
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeQuestionModal() {
+        const modal = document.getElementById('question-modal');
+        const content = document.getElementById('question-modal-content');
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function openBulkQuestionModal() {
+        const modal = document.getElementById('bulk-question-modal');
+        const content = document.getElementById('bulk-question-modal-content');
+        document.getElementById('bulk-question-form').reset();
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeBulkQuestionModal() {
+        const modal = document.getElementById('bulk-question-modal');
+        const content = document.getElementById('bulk-question-modal-content');
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    async function saveBulkQuestions(e) {
+        e.preventDefault();
+        const category = document.getElementById('bulk-q-category').value;
+        const difficulty = document.getElementById('bulk-q-difficulty').value;
+        const raw = document.getElementById('bulk-q-text').value || '';
+        const items = raw.split('\n').map(s => s.trim()).filter(Boolean);
+
+        if (items.length === 0) {
+            showToast('Please enter at least 1 question', 'error');
+            return;
+        }
+
+        try {
+            const res = await fetch('/admin/api/questions/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, difficulty, items })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                showToast(`${data.inserted || items.length} questions added`, 'success');
+                closeBulkQuestionModal();
+                loadQuestions();
+            } else {
+                showToast('Failed to bulk add questions', 'error');
+            }
+        } catch (e2) {
+            console.error(e2);
+            showToast('Error bulk adding questions', 'error');
+        }
+    }
+
+    async function saveQuestion(e) {
+        e.preventDefault();
+        const id = document.getElementById('question-id').value;
+        const data = {
+            category: document.getElementById('modal-q-category').value,
+            difficulty: document.getElementById('modal-q-difficulty').value,
+            text: document.getElementById('modal-q-text').value
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/admin/api/questions/${id}` : '/admin/api/questions';
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                showToast(`Question ${id ? 'updated' : 'added'} successfully`, 'success');
+                closeQuestionModal();
+                loadQuestions();
+            } else {
+                showToast('Failed to save question', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error saving question', 'error');
+        }
+    }
+
+    async function deleteQuestion(id) {
+        if (!confirm("Are you sure you want to delete this question?")) return;
+        try {
+            const res = await fetch(`/admin/api/questions/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                showToast('Question deleted successfully', 'success');
+                loadQuestions();
+            } else {
+                showToast('Failed to delete question', 'error');
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function generateQuestion() {
+        showToast('Generating AI questions...', 'info');
+        try {
+            const res = await fetch('/admin/api/questions/generate', { method: 'POST' });
+            if (res.ok) {
+                showToast('AI Questions generated successfully!', 'success');
+                loadQuestions();
+            } else {
+                showToast('Failed to generate AI questions', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error generating AI questions', 'error');
+        }
+    }
+
+    // --- ATS KEYWORDS CHART ---
+    let keywordsChart;
+    async function loadResumeKeywordTrends() {
+        try {
+            const res = await fetch('/admin/api/resumes/keyword-trends');
+            if(!res.ok) return;
+            const data = await res.json();
+            
+            document.getElementById('res-avg-score').textContent = data.avg_score + '%';
+            document.getElementById('res-count').textContent = data.total_processed;
+            document.getElementById('res-top-keyword').textContent = data.top_keyword || 'N/A';
+
+            const ctx = document.getElementById('keywordsChart').getContext('2d');
+            if (keywordsChart) keywordsChart.destroy();
+            
+            keywordsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.chart.labels,
+                    datasets: [{
+                        label: 'Missing Frequency',
+                        data: data.chart.data,
+                        backgroundColor: '#f43f5e',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    // Chart Setup
+    let usageChart;
+    function initUsageChart() {
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        if (usageChart) usageChart.destroy();
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); // Blue-500
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+        const labels = window.chartData ? window.chartData.labels : ['Jan', 'Feb', 'Mar', 'Apr'];
+        const data = window.chartData ? window.chartData.data : [10, 25, 40, 60];
+
+        usageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Interviews Completed',
+                    data: data,
+                    borderColor: '#3b82f6',
+                    borderWidth: 4,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: gradient,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                }
+            }
+        });
+    }
+
+    // Init
+    window.onload = () => {
+        showSection('dashboard');
+        let realtimeBusy = false;
+        const realtimeTick = async () => {
+            if (document.hidden) return;
+            if (realtimeBusy) return;
+            realtimeBusy = true;
+            try {
+                const tasks = [];
+                if (!document.getElementById('section-dashboard').classList.contains('hidden')) tasks.push(loadStats());
+                if (!document.getElementById('section-users').classList.contains('hidden')) tasks.push(loadUsers());
+                if (!document.getElementById('section-interviews').classList.contains('hidden')) tasks.push(loadQuestions());
+                if (!document.getElementById('section-resumes').classList.contains('hidden')) tasks.push(loadResumes(), loadResumeKeywordTrends());
+                if (!document.getElementById('section-health').classList.contains('hidden')) tasks.push(loadHealth());
+                await Promise.allSettled(tasks);
+            } finally {
+                realtimeBusy = false;
+            }
+        };
+
+        realtimeTick();
+        setInterval(realtimeTick, 5000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) realtimeTick(); });
+    };
+</script>
+
+</body>
+</html>

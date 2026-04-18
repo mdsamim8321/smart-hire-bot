@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - SmartHire Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        accent: '#8b5cf6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        dark: '#0f172a',
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { transition: background-color 0.3s ease, color 0.3s ease; }
+        .sidebar-item-active {
+            background: #3b82f6;
+            color: white !important;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="bg-dark text-slate-100 min-h-screen font-sans">
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col p-6 z-50">
+        <div class="flex items-center gap-3 mb-10 text-primary text-2xl font-extrabold px-2">
+            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <i data-lucide="cpu" class="w-6 h-6"></i>
+            </div>
+            <span>SmartHire Bot</span>
+        </div>
+
+        <nav class="flex-grow space-y-1.5">
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Main Menu</p>
+            <a href="/dashboard" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i> Dashboard
+            </a>
+            <a href="/interview" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="play-circle" class="w-5 h-5"></i> Practice Hub
+            </a>
+            <a href="/mock-interview" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="video" class="w-5 h-5"></i> Mock Interview
+            </a>
+            <a href="/interview#mcq" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="help-circle" class="w-5 h-5"></i> MCQ Quiz
+            </a>
+           
+            <a href="/results" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Analytics
+            </a>
+            <a href="/profile" class="flex items-center gap-4 p-3.5 rounded-2xl sidebar-item-active font-bold transition-all">
+                <i data-lucide="user" class="w-5 h-5"></i> My Profile
+            </a>
+        </nav>
+
+        <div class="pt-6 border-t border-slate-800 space-y-1.5">
+            <a href="/logout" class="flex items-center gap-4 p-3.5 rounded-2xl text-danger hover:bg-danger/10 font-bold transition-all">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <h1 class="text-3xl font-black text-white tracking-tight">User Profile</h1>
+                <p class="text-slate-400 font-medium">Customize your professional identity and goals.</p>
+            </div>
+            <button onclick="saveProfile()" class="px-6 py-3 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+                SAVE CHANGES
+            </button>
+        </header>
+
+        <div class="grid grid-cols-12 gap-8">
+            <!-- Left Column: Avatar & Quick Info -->
+            <div class="col-span-12 lg:col-span-4 space-y-8">
+                <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-10 text-center shadow-sm relative overflow-hidden group">
+                    <!-- Background Decoration -->
+                    <div class="absolute -top-24 -left-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="relative w-40 h-40 mx-auto mb-8">
+                            <div id="avatarContainer" class="w-full h-full rounded-[48px] bg-gradient-to-br from-slate-800 to-slate-700 border-4 border-slate-800 shadow-2xl flex items-center justify-center text-6xl overflow-hidden">
+                                {% if user.profile_photo %}
+                                    <img src="{{ user.profile_photo }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <img src="https://ui-avatars.com/api/?name={{ user.full_name }}&background=random" class="w-full h-full object-cover">
+                                {% endif %}
+                            </div>
+                            <button onclick="document.getElementById('avatarInput').click()" class="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl border-4 border-slate-900 hover:scale-110 transition-transform">
+                                <i data-lucide="camera" class="w-5 h-5"></i>
+                                <input type="file" id="avatarInput" hidden accept="image/*" onchange="previewAvatar(this)">
+                            </button>
+                        </div>
+                        
+                        <h2 class="text-2xl font-black text-white mb-1">{{ user.full_name }}</h2>
+                        <p class="text-primary font-bold text-xs uppercase tracking-[0.2em] mb-8">{{ user.field or 'Not Specified' }}</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 py-6 border-t border-slate-800">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Rank</p>
+                                <p class="text-lg font-black text-white">PRO</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Level</p>
+                                <p class="text-lg font-black text-white">{{ user.level or 1 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Profile Completion -->
+                <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-8 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-sm font-black text-white uppercase tracking-widest">Profile Progress</h3>
+                        <span class="text-xs font-black text-primary">85%</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-6">
+                        <div class="w-[85%] h-full bg-primary rounded-full shadow-[0_0_12px_rgba(59,130,246,0.5)]"></div>
+                    </div>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-3 text-xs text-slate-400">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-success"></i> Basic Information
+                        </li>
+                        <li class="flex items-center gap-3 text-xs text-slate-400">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-success"></i> Technical Skills
+                        </li>
+                        <li class="flex items-center gap-3 text-xs text-slate-400">
+                            <i data-lucide="circle" class="w-4 h-4 text-slate-600"></i> Upload Portfolio Link
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+            <!-- Right Column: Forms & Details -->
+            <div class="col-span-12 lg:col-span-8 space-y-8">
+                <!-- Personal Info -->
+                <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-10 shadow-sm">
+                    <h3 class="text-xl font-black text-white mb-10 flex items-center gap-3">
+                        <i data-lucide="user-cog" class="text-accent"></i> Personal Details
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Display Name</label>
+                            <input type="text" id="full_name" value="{{ user.full_name }}" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary transition-all">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Target Job Role</label>
+                            <input type="text" id="field" value="{{ user.field or '' }}" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary transition-all">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Location</label>
+                            <input type="text" id="location" value="{{ user.location or '' }}" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary transition-all" placeholder="e.g. New York, USA">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Email Address</label>
+                            <input type="email" value="{{ user.email }}" disabled class="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 text-slate-500 font-bold outline-none cursor-not-allowed">
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Professional Bio</label>
+                            <textarea id="bio" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-medium outline-none focus:border-primary transition-all resize-none" placeholder="Write a short professional bio...">{{ user.bio or '' }}</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Technical Expertise -->
+                <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-10 shadow-sm">
+                    <h3 class="text-xl font-black text-white mb-10 flex items-center gap-3">
+                        <i data-lucide="code" class="text-primary"></i> Technical Expertise
+                    </h3>
+                    
+                    <div class="space-y-8">
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Primary Skills (Comma separated)</label>
+                            <input type="text" id="skills" value="{{ user.skills or '' }}" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary transition-all" placeholder="e.g. Python, React, SQL">
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Experience Level</label>
+                                <select id="experience" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary transition-all">
+                                    <option value="Junior" {% if user.experience == 'Junior' %}selected{% endif %}>Junior (0-2 Years)</option>
+                                    <option value="Mid-Level" {% if user.experience == 'Mid-Level' %}selected{% endif %}>Mid-Level (2-5 Years)</option>
+                                    <option value="Senior" {% if user.experience == 'Senior' %}selected{% endif %}>Senior (5+ Years)</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Dream Company</label>
+                                <input type="text" id="dream_company" value="{{ user.dream_company or '' }}" placeholder="e.g. Google, Meta" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Initialize theme on load
+    (function initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const html = document.documentElement;
+        if (savedTheme === 'light') {
+            html.classList.remove('dark');
+        } else {
+            html.classList.add('dark');
+        }
+    })();
+
+    lucide.createIcons();
+
+    function previewAvatar(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const container = document.getElementById('avatarContainer');
+                container.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function saveProfile() {
+        const data = {
+            full_name: document.getElementById('full_name').value,
+            field: document.getElementById('field').value,
+            location: document.getElementById('location').value,
+            bio: document.getElementById('bio').value,
+            skills: document.getElementById('skills').value,
+            experience: document.getElementById('experience').value,
+            dream_company: document.getElementById('dream_company').value
+        };
+
+        try {
+            const response = await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const res = await response.json();
+            if (res.status === 'success') {
+                alert('Profile updated successfully!');
+                window.location.reload();
+            } else {
+                alert('Error: ' + res.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to save profile');
+        }
+    }
+</script>
+
+</body>
+</html>

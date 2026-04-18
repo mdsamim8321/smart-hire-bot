@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Hub - SmartHire Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        accent: '#8b5cf6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        dark: '#0f172a',
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { transition: background-color 0.3s ease, color 0.3s ease; }
+        .sidebar-item-active { background: #3b82f6; color: white !important; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        .camera-preview {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #0f172a;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 2px solid #1e293b;
+            position: relative;
+        }
+        #videoElement { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .recording-indicator { animation: pulse-red 2s infinite; }
+        
+        .step-inactive { display: none; }
+        .step-active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-dark text-slate-100 min-h-screen font-sans">
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col p-6 z-50">
+        <div class="flex items-center gap-3 mb-10 text-primary text-2xl font-extrabold px-2">
+            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <i data-lucide="cpu" class="w-6 h-6"></i>
+            </div>
+            <span>SmartHire Bot</span>
+        </div>
+
+        <nav class="flex-grow space-y-1.5">
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Main Menu</p>
+            <a href="/dashboard" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i> Dashboard
+            </a>
+            <a href="/interview" class="flex items-center gap-4 p-3.5 rounded-2xl sidebar-item-active font-bold transition-all">
+                <i data-lucide="play-circle" class="w-5 h-5"></i> Practice Hub
+            </a>
+            <a href="/mock-interview" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="video" class="w-5 h-5"></i> Mock Interview
+            </a>
+            <a href="/interview#mcq" onclick="startMCQ()" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="help-circle" class="w-5 h-5"></i> MCQ Quiz
+            </a>
+            <a href="/results" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Analytics
+            </a>
+            <a href="/profile" class="flex items-center gap-4 p-3.5 rounded-2xl text-slate-400 hover:bg-slate-800 font-bold transition-all">
+                <i data-lucide="user" class="w-5 h-5"></i> My Profile
+            </a>
+        </nav>
+
+        <div class="pt-6 border-t border-slate-800 space-y-1.5">
+            <a href="/logout" class="flex items-center gap-4 p-3.5 rounded-2xl text-danger hover:bg-danger/10 font-bold transition-all">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+        
+        <!-- STEP 1: RESUME UPLOAD -->
+        <div id="step-1" class="step-active max-w-4xl mx-auto space-y-8">
+            <header class="mb-10 text-center">
+                <h1 class="text-4xl font-black text-white tracking-tight mb-2">Practice Hub</h1>
+                <p class="text-slate-400 font-medium">Upload your resume to get started with AI matching.</p>
+            </header>
+
+            <section class="bg-slate-900 border border-slate-800 rounded-[40px] p-12 shadow-xl text-center">
+                <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto mb-8">
+                    <i data-lucide="file-text" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-2xl font-black text-white mb-4">Resume Intelligence</h2>
+                <p class="text-slate-500 mb-10 max-w-md mx-auto font-medium leading-relaxed text-sm">Optimize your profile before starting. AI will analyze your skills and match you with top companies.</p>
+                
+                <div id="uploadArea" onclick="document.getElementById('resumeInput').click()" class="border-2 border-dashed border-slate-800 rounded-3xl p-16 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group relative">
+                    <input type="file" id="resumeInput" hidden accept=".pdf,.docx" onchange="handleResumeUpload(this)">
+                    <div id="uploadContent">
+                        <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 group-hover:text-primary"></i>
+                        </div>
+                        <p class="text-sm font-black text-white mb-1">Upload Resume for AI Match Score</p>
+                        <p class="text-xs text-slate-500 font-medium">PDF, DOCX supported only</p>
+                    </div>
+                    
+                    <!-- Progress Bar Overlay -->
+                    <div id="uploadProgressOverlay" class="hidden absolute inset-0 bg-slate-900/90 rounded-3xl flex flex-col items-center justify-center p-8 z-20">
+                        <div class="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6"></div>
+                        <p class="text-sm font-black text-white mb-4">Uploading & Analyzing...</p>
+                        <div class="w-full max-w-xs h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="uploadProgressBar" class="h-full bg-primary transition-all duration-300 w-0"></div>
+                        </div>
+                        <p id="uploadStatusText" class="text-[10px] text-slate-500 mt-3 font-black uppercase tracking-widest">Starting analysis...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- STEP 2: ATS SCORE & ANALYSIS -->
+        <div id="step-2" class="step-inactive max-w-6xl mx-auto space-y-10 pb-20">
+            <header class="flex justify-between items-center mb-10">
+                <div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">AI Resume Analysis</h2>
+                    <p class="text-slate-400 font-medium">Deep dive into your resume performance and match score.</p>
+                </div>
+                <button onclick="goToStep(1)" class="px-6 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black text-slate-400 hover:text-white transition-all">UPLOAD NEW</button>
+            </header>
+
+            <div class="grid grid-cols-12 gap-8">
+                <!-- Left: Scores & Breakdown -->
+                <div class="col-span-12 lg:col-span-4 space-y-8">
+                    <!-- Main ATS Score -->
+                    <section class="bg-slate-900 border border-slate-800 rounded-[40px] p-10 text-center relative overflow-hidden">
+                        <div class="relative w-48 h-48 mx-auto mb-6">
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="96" cy="96" r="88" fill="none" stroke="#1e293b" stroke-width="12"></circle>
+                                <circle id="atsCircle" cx="96" cy="96" r="88" fill="none" stroke="#3b82f6" stroke-width="12" stroke-dasharray="552.9" stroke-dashoffset="552.9" stroke-linecap="round" class="transition-all duration-1000 ease-out"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-5xl font-black text-white" id="atsScoreText">0%</span>
+                                <span class="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">ATS Score</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 pt-6 border-t border-slate-800">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Readability</p>
+                                <p class="text-lg font-black text-white" id="readabilityScore">0%</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Impact</p>
+                                <p class="text-lg font-black text-white" id="impactScore">0%</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Skill Breakdown -->
+                    <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-8 space-y-6">
+                        <h3 class="text-sm font-black text-white uppercase tracking-widest">Skill Breakdown</h3>
+                        <div id="skillBreakdown" class="space-y-5">
+                            <!-- Dynamic skills -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right: Keywords & Recommendations -->
+                <div class="col-span-12 lg:col-span-8 space-y-8">
+                    <!-- Recommended Companies (Redirect to Mock Interview) -->
+                    <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-8">
+                        <h3 class="text-xl font-black text-white mb-8 flex items-center gap-3">
+                            <i data-lucide="building-2" class="text-primary"></i> Target Companies
+                        </h3>
+                        <div id="companyList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Dynamic companies -->
+                        </div>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Missing Keywords -->
+                        <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-8 space-y-6">
+                            <div class="flex items-center gap-3 text-warning">
+                                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                                <h3 class="text-sm font-black text-white uppercase tracking-widest">Missing Keywords</h3>
+                            </div>
+                            <div id="keywordList" class="flex flex-wrap gap-2">
+                                <!-- Dynamic keywords -->
+                            </div>
+                            <p class="text-[10px] text-slate-500 font-medium italic">Add these to your resume to increase your match score by up to 15%.</p>
+                        </section>
+
+                        <!-- AI Suggestions -->
+                        <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-8 space-y-6">
+                            <div class="flex items-center gap-3 text-success">
+                                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                                <h3 class="text-sm font-black text-white uppercase tracking-widest">AI Suggestions</h3>
+                            </div>
+                            <ul id="suggestionList" class="space-y-4">
+                                <!-- Dynamic suggestions -->
+                            </ul>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: DEVICE SETUP -->
+        <div id="step-3" class="step-inactive max-w-5xl mx-auto space-y-8">
+            <header class="mb-10 flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">Device Setup</h2>
+                    <p class="text-slate-400 font-medium" id="selectedRoleText">Software Engineer</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-xs">MS</div>
+                    <div class="text-right">
+                        <p class="text-xs font-black text-white">{{ user.full_name }}</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase">{{ user.email }}</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div class="lg:col-span-7">
+                    <div class="camera-preview">
+                        <video id="setupVideo" autoplay playsinline muted></video>
+                        <div id="noCamera" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 space-y-4">
+                            <i data-lucide="camera-off" class="w-12 h-12"></i>
+                            <p class="text-sm font-bold uppercase tracking-widest">Camera Off</p>
+                        </div>
+                        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                            <div class="w-1 h-4 bg-white/20 rounded-full"></div>
+                            <div class="w-1 h-6 bg-white/40 rounded-full"></div>
+                            <div class="w-1 h-4 bg-white/20 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-[32px] p-8 space-y-8 shadow-xl">
+                    <h3 class="text-xl font-black text-white">Ready to start?</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Camera</label>
+                            <select class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none text-sm">
+                                <option>Integrated Camera</option>
+                            </select>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Microphone</label>
+                            <select class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white font-bold outline-none text-sm">
+                                <option>Default - Internal Mic</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="startActualInterview()" class="w-full py-5 bg-primary text-white rounded-2xl font-black text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
+                        CONTINUE <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: ACTIVE INTERVIEW -->
+        <div id="step-4" class="step-inactive max-w-6xl mx-auto space-y-8 pb-20">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-3 h-3 bg-red-500 rounded-full recording-indicator"></div>
+                    <h2 class="text-xl font-black text-white">AI Interview Session</h2>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="text-right">
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Time Remaining</p>
+                        <p class="text-lg font-black text-white tabular-nums">14:22</p>
+                    </div>
+                    <button onclick="finishInterview()" class="px-6 py-3 bg-red-500/10 text-danger border border-danger/20 rounded-2xl text-xs font-black hover:bg-danger hover:text-white transition-all">FINISH SESSION</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-7 space-y-8">
+                    <div class="camera-preview">
+                        <video id="activeVideo" autoplay playsinline></video>
+                    </div>
+                    
+                    <div class="bg-slate-900 border border-slate-800 rounded-[32px] p-10 shadow-xl relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-6 relative z-10">
+                            <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                                <i data-lucide="bot" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-black text-primary uppercase tracking-widest">SmartHire Bot</span>
+                        </div>
+                        <h3 id="currentQuestion" class="text-2xl font-black text-white leading-tight mb-10 relative z-10">Hello! I'm your AI interviewer. Let's start with a brief introduction. Tell me about yourself.</h3>
+                        
+                        <div class="space-y-4 relative z-10">
+                            <textarea id="answerArea" rows="4" class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-6 text-white font-medium outline-none focus:border-primary transition-all resize-none" placeholder="Your response..."></textarea>
+                            <button onclick="submitAnswer()" class="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                                SUBMIT RESPONSE <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 lg:col-span-5 space-y-8">
+                    <section class="bg-slate-900 border border-slate-800 rounded-[32px] p-8 shadow-sm">
+                        <h3 class="text-lg font-black text-white mb-6 flex items-center gap-3">
+                            <i data-lucide="activity" class="text-success"></i> Live Analysis
+                        </h3>
+                        <div class="space-y-8">
+                            <div>
+                                <div class="flex justify-between text-[10px] font-black uppercase mb-3">
+                                    <span class="text-slate-500">Communication Clarity</span>
+                                    <span class="text-primary">82%</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div class="w-[82%] h-full bg-primary transition-all duration-500"></div>
+                                </div>
+                            </div>
+                            <div class="p-6 bg-slate-800/50 rounded-2xl border border-slate-700">
+                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">AI Observation</p>
+                                <p id="aiObservation" class="text-xs text-slate-300 italic font-medium leading-relaxed">"Great eye contact. Keep your explanation structured using the STAR method."</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="bg-gradient-to-br from-indigo-600 to-accent rounded-[32px] p-8 text-white shadow-xl relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h3 class="text-lg font-black mb-4">Quick Tip</h3>
+                            <p class="text-sm text-white/80 leading-relaxed font-medium">"Focus on quantifying your achievements. Instead of saying 'improved performance', say 'improved performance by 25%'."</p>
+                        </div>
+                        <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 5: MCQ QUIZ SECTION -->
+        <div id="step-5" class="step-inactive max-w-4xl mx-auto space-y-8 pb-20">
+            <header class="flex justify-between items-center mb-10">
+                <div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">MCQ Practice</h2>
+                    <p class="text-slate-400 font-medium">Test your technical knowledge with quick MCQs.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div id="quizTimer" class="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-warning font-black tabular-nums">10:00</div>
+                    <button onclick="location.reload()" class="px-6 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black text-slate-400 hover:text-white transition-all">EXIT QUIZ</button>
+                </div>
+            </header>
+
+            <!-- MCQ Question Card -->
+            <div id="mcqCard" class="bg-slate-900 border border-slate-800 rounded-[40px] p-12 shadow-xl relative overflow-hidden">
+                <div class="flex justify-between items-center mb-10">
+                    <span id="mcqProgressText" class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Question 1 of 10</span>
+                    <div class="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="mcqProgressBar" class="h-full bg-primary w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <h3 id="mcqQuestion" class="text-2xl font-black text-white leading-tight mb-12">Loading question...</h3>
+
+                <div id="mcqOptions" class="grid grid-cols-1 gap-4 mb-12">
+                    <!-- Options dynamic -->
+                </div>
+
+                <button id="mcqNextBtn" onclick="nextMCQ()" disabled class="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center justify-center gap-2">
+                    NEXT QUESTION <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- MCQ Results (Hidden by default) -->
+            <div id="mcqResults" class="hidden space-y-8 animate-slide-in">
+                <section class="bg-slate-900 border border-slate-800 rounded-[40px] p-12 text-center shadow-xl">
+                    <div class="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-8">
+                        <i data-lucide="award" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-white mb-2">Quiz Completed!</h2>
+                    <p class="text-slate-500 font-medium mb-12">Here's how you performed in this session.</p>
+
+                    <div class="grid grid-cols-3 gap-6 mb-12">
+                        <div class="p-6 bg-slate-800/50 rounded-3xl border border-slate-700">
+                            <p class="text-[10px] font-black text-slate-500 uppercase mb-2">Correct</p>
+                            <p id="mcqCorrectCount" class="text-3xl font-black text-success">0</p>
+                        </div>
+                        <div class="p-6 bg-slate-800/50 rounded-3xl border border-slate-700">
+                            <p class="text-[10px] font-black text-slate-500 uppercase mb-2">Wrong</p>
+                            <p id="mcqWrongCount" class="text-3xl font-black text-danger">0</p>
+                        </div>
+                        <div class="p-6 bg-slate-800/50 rounded-3xl border border-slate-700">
+                            <p class="text-[10px] font-black text-slate-500 uppercase mb-2">Score</p>
+                            <p id="mcqFinalScore" class="text-3xl font-black text-primary">0%</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 mb-12">
+                        <button onclick="retryQuiz()" class="flex-1 py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">RETRY QUIZ</button>
+                        <button onclick="window.location.href='/dashboard'" class="flex-1 py-5 bg-slate-800 text-white rounded-2xl font-black text-sm hover:bg-slate-700 transition-all">BACK TO DASHBOARD</button>
+                    </div>
+
+                    <div class="border-t border-slate-800 pt-12 text-left">
+                        <h3 class="text-xl font-black text-white mb-8">Review Answers</h3>
+                        <div id="mcqReviewList" class="space-y-6">
+                            <!-- Review items dynamic -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Initialize theme on load
+    (function initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const html = document.documentElement;
+        if (savedTheme === 'light') {
+            html.classList.remove('dark');
+            document.body.classList.replace('bg-dark', 'bg-slate-50');
+            document.body.classList.replace('text-slate-100', 'text-slate-900');
+        } else {
+            html.classList.add('dark');
+            document.body.classList.replace('bg-slate-50', 'bg-dark');
+            document.body.classList.replace('text-slate-900', 'text-slate-100');
+        }
+    })();
+
+    // Sidebar Active State Sync
+    function syncSidebar() {
+        const hash = window.location.hash;
+        const practiceHubLink = document.querySelector('a[href="/interview"]');
+        const mcqQuizLink = document.querySelector('a[href="/interview#mcq"]');
+
+        if (hash === '#mcq') {
+            // MCQ Active
+            practiceHubLink.classList.remove('sidebar-item-active');
+            practiceHubLink.classList.add('text-slate-400', 'hover:bg-slate-800');
+            mcqQuizLink.classList.add('sidebar-item-active');
+            mcqQuizLink.classList.remove('text-slate-400', 'hover:bg-slate-800');
+            startMCQ();
+        } else {
+            // Practice Hub Active
+            mcqQuizLink.classList.remove('sidebar-item-active');
+            mcqQuizLink.classList.add('text-slate-400', 'hover:bg-slate-800');
+            practiceHubLink.classList.add('sidebar-item-active');
+            practiceHubLink.classList.remove('text-slate-400', 'hover:bg-slate-800');
+            goToStep(1);
+        }
+    }
+
+    window.addEventListener('load', syncSidebar);
+    window.addEventListener('hashchange', syncSidebar);
+
+    lucide.createIcons();
+
+    // STEP TRANSITIONS
+    function goToStep(step) {
+        document.querySelectorAll('.step-active').forEach(el => {
+            el.classList.remove('step-active');
+            el.classList.add('step-inactive');
+        });
+        const next = document.getElementById(`step-${step}`);
+        next.classList.remove('step-inactive');
+        next.classList.add('step-active');
+
+        // Update sidebar active state for MCQ
+        const practiceHubLink = document.querySelector('a[href="/interview"]');
+        const mcqQuizLink = document.querySelector('a[href="/interview#mcq"]');
+        
+        if (step === 5) {
+            practiceHubLink.classList.remove('sidebar-item-active');
+            practiceHubLink.classList.add('text-slate-400', 'hover:bg-slate-800');
+            mcqQuizLink.classList.add('sidebar-item-active');
+            mcqQuizLink.classList.remove('text-slate-400', 'hover:bg-slate-800');
+        } else {
+            mcqQuizLink.classList.remove('sidebar-item-active');
+            mcqQuizLink.classList.add('text-slate-400', 'hover:bg-slate-800');
+            practiceHubLink.classList.add('sidebar-item-active');
+            practiceHubLink.classList.remove('text-slate-400', 'hover:bg-slate-800');
+        }
+
+        lucide.createIcons();
+    }
+
+    // RESUME LOGIC
+    async function handleResumeUpload(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const file = input.files[0];
+        const allowedTypes = ['.pdf', '.docx'];
+        const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        
+        if (!allowedTypes.includes(extension)) {
+            alert("Please upload PDF or DOCX files only.");
+            input.value = "";
+            return;
+        }
+
+        const overlay = document.getElementById('uploadProgressOverlay');
+        const progressBar = document.getElementById('uploadProgressBar');
+        const statusText = document.getElementById('uploadStatusText');
+        
+        overlay.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        statusText.innerText = "Uploading file...";
+
+        const formData = new FormData();
+        formData.append('resume', file);
+
+        try {
+            // Simulate upload progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress <= 90) {
+                    progressBar.style.width = progress + '%';
+                    if (progress > 40) statusText.innerText = "AI Agent parsing resume...";
+                    if (progress > 70) statusText.innerText = "Matching skills...";
+                }
+            }, 100);
+
+            const response = await fetch('/api/analyze-resume', {
+                method: 'POST',
+                body: formData
+            });
+            
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            statusText.innerText = "Analysis Complete!";
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                setTimeout(() => {
+                    renderResumeResults(data);
+                    goToStep(2);
+                    overlay.classList.add('hidden');
+                }, 500);
+            } else {
+                alert("Error: " + data.message);
+                overlay.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error("Upload failed:", error);
+            alert("Failed to analyze resume. Please try again.");
+            overlay.classList.add('hidden');
+        }
+    }
+
+    function renderResumeResults(data) {
+        // Set main scores
+        document.getElementById('atsScoreText').innerText = data.scores.ats_score + '%';
+        document.getElementById('readabilityScore').innerText = data.scores.readability + '%';
+        document.getElementById('impactScore').innerText = data.scores.impact + '%';
+        
+        // Animate circle
+        const circle = document.getElementById('atsCircle');
+        const circumference = 2 * Math.PI * 88;
+        const offset = circumference - (data.scores.ats_score / 100 * circumference);
+        circle.style.strokeDashoffset = offset;
+
+        // Set skill breakdown
+        const skillBreakdownEl = document.getElementById('skillBreakdown');
+        skillBreakdownEl.innerHTML = '';
+        
+        // Use missing keywords for "Needs improvement"
+        data.missing_keywords.slice(0, 3).forEach(keyword => {
+            const skillEl = document.createElement('div');
+            skillEl.className = 'space-y-2';
+            skillEl.innerHTML = `
+                <div class="flex justify-between text-[10px] font-black uppercase mb-2">
+                    <span class="text-slate-400">${keyword}</span>
+                    <span class="text-danger">Missing</span>
+                </div>
+                <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-danger w-0"></div>
+                </div>
+            `;
+            skillBreakdownEl.appendChild(skillEl);
+        });
+
+        // Set companies
+        const companyListEl = document.getElementById('companyList');
+        companyListEl.innerHTML = '';
+        data.companies.forEach(company => {
+            const companyEl = document.createElement('div');
+            companyEl.className = 'bg-slate-800/50 rounded-2xl border border-slate-700 p-6 card-hover';
+            companyEl.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="${company.logo}" class="w-5 h-5"></i>
+                    </div>
+                    <span class="px-3 py-1 bg-success/10 text-success text-xs font-black rounded-full">${company.match} Match</span>
+                </div>
+                <h4 class="text-lg font-black text-white mb-1">${company.name}</h4>
+                <p class="text-sm text-slate-400 mb-6">${company.role}</p>
+                <button onclick="window.location.href='/mock-interview?company=${encodeURIComponent(company.name)}&role=${encodeURIComponent(company.role)}'" class="px-5 py-2 bg-primary text-white rounded-xl font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">Start Interview</button>
+            `;
+            companyListEl.appendChild(companyEl);
+        });
+
+        // Set missing keywords
+        const keywordListEl = document.getElementById('keywordList');
+        keywordListEl.innerHTML = data.missing_keywords.map(kw => `
+            <span class="px-3 py-1 bg-warning/10 text-warning text-xs font-black rounded-full">${kw}</span>
+        `).join('');
+
+        // Set suggestions
+        const suggestionListEl = document.getElementById('suggestionList');
+        suggestionListEl.innerHTML = data.suggestions.map(s => `
+            <div class="flex gap-3 p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-success shrink-0 mt-0.5"></i>
+                <p class="text-xs text-slate-300 font-medium leading-relaxed">${s}</p>
+            </div>
+        `).join('');
+
+        lucide.createIcons();
+    }
+
+    function selectCompany(role) {
+        document.getElementById('selectedRoleText').innerText = role;
+        goToStep(3);
+        initCamera('setupVideo');
+    }
+
+    // CAMERA LOGIC
+    let stream;
+    async function initCamera(elementId) {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const video = document.getElementById(elementId);
+            video.srcObject = stream;
+            const noCam = document.getElementById('noCamera');
+            if (noCam) noCam.classList.add('hidden');
+        } catch (err) {
+            console.error("Camera denied", err);
+            alert("Please enable camera/mic access to continue.");
+        }
+    }
+
+    function startActualInterview() {
+        goToStep(4);
+        const activeVideo = document.getElementById('activeVideo');
+        if (stream) activeVideo.srcObject = stream;
+        else initCamera('activeVideo');
+        
+        // Start questions
+        setTimeout(fetchNewQuestion, 2000);
+    }
+
+    // INTERVIEW FLOW
+    async function fetchNewQuestion() {
+        const qDisplay = document.getElementById('currentQuestion');
+        qDisplay.innerText = "Generating dynamic follow-up...";
+        
+        try {
+            const res = await fetch('/api/get-question?difficulty=Medium');
+            const data = await res.json();
+            qDisplay.innerText = data.question;
+        } catch (e) {
+            qDisplay.innerText = "Could you explain a challenging technical problem you solved recently?";
+        }
+    }
+
+    async function submitAnswer() {
+        const ans = document.getElementById('answerArea').value;
+        if (!ans.trim()) return;
+        
+        const obs = document.getElementById('aiObservation');
+        obs.innerText = "Analyzing response...";
+        
+        try {
+            const res = await fetch('/api/submit-answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answer: ans, question: document.getElementById('currentQuestion').innerText })
+            });
+            const data = await res.json();
+            obs.innerText = data.evaluation;
+            document.getElementById('answerArea').value = "";
+            setTimeout(fetchNewQuestion, 3000);
+        } catch (e) {
+            obs.innerText = "Solid response. Moving to the next question.";
+            document.getElementById('answerArea').value = "";
+            setTimeout(fetchNewQuestion, 2000);
+        }
+    }
+
+    function finishInterview() {
+        // Stop camera
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        window.location.href = '/results';
+    }
+
+    // MCQ QUIZ LOGIC
+    let mcqQuestions = [];
+    let currentMcqIndex = 0;
+    let mcqScore = 0;
+    let mcqWrong = 0;
+    let quizTimeLeft = 600; // 10 minutes
+    let quizInterval;
+
+    function startMCQ() {
+        goToStep(5);
+        fetchMCQQuestions();
+        startQuizTimer();
+    }
+
+    async function fetchMCQQuestions() {
+        const questionEl = document.getElementById('mcqQuestion');
+        questionEl.innerText = "Loading challenging MCQs...";
+        
+        try {
+            const response = await fetch('/api/mcq-questions');
+            mcqQuestions = await response.json();
+            
+            // Map keys if they differ
+            mcqQuestions = mcqQuestions.map(q => ({
+                q: q.question,
+                options: q.options,
+                correct: q.correct
+            }));
+
+            if (mcqQuestions.length === 0) throw new Error("No questions");
+            renderMCQ();
+        } catch (e) {
+            console.error("Quiz load error:", e);
+            questionEl.innerText = "Failed to load quiz questions. Using fallback.";
+            // Fallback questions...
+            mcqQuestions = [
+                { q: "What is the time complexity of searching in a balanced BST?", options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"], correct: 1 },
+                { q: "Which of the following is NOT a fundamental principle of OOP?", options: ["Encapsulation", "Inheritance", "Compilation", "Polymorphism"], correct: 2 }
+            ];
+            renderMCQ();
+        }
+    }
+
+    function renderMCQ() {
+        const q = mcqQuestions[currentMcqIndex];
+        document.getElementById('mcqQuestion').innerText = q.q;
+        document.getElementById('mcqProgressText').innerText = `Question ${currentMcqIndex + 1} of ${mcqQuestions.length}`;
+        document.getElementById('mcqProgressBar').style.width = `${((currentMcqIndex + 1) / mcqQuestions.length) * 100}%`;
+        
+        const optionsEl = document.getElementById('mcqOptions');
+        optionsEl.innerHTML = q.options.map((opt, i) => `
+            <button onclick="selectMCQOption(${i})" class="mcq-option w-full p-5 bg-slate-800 border border-slate-700 rounded-2xl text-left text-slate-300 font-bold hover:border-primary hover:bg-primary/5 transition-all flex justify-between items-center group">
+                <span>${opt}</span>
+                <div class="w-6 h-6 rounded-full border-2 border-slate-700 group-hover:border-primary flex items-center justify-center transition-all">
+                    <div class="option-dot w-3 h-3 bg-primary rounded-full scale-0 transition-all"></div>
+                </div>
+            </button>
+        `).join('');
+        
+        document.getElementById('mcqNextBtn').disabled = true;
+        lucide.createIcons();
+    }
+
+    let selectedOption = null;
+    function selectMCQOption(index) {
+        selectedOption = index;
+        document.querySelectorAll('.mcq-option').forEach((btn, i) => {
+            if (i === index) {
+                btn.classList.add('border-primary', 'bg-primary/10');
+                btn.querySelector('.option-dot').classList.remove('scale-0');
+                btn.querySelector('.option-dot').classList.add('scale-100');
+            } else {
+                btn.classList.remove('border-primary', 'bg-primary/10');
+                btn.querySelector('.option-dot').classList.add('scale-0');
+                btn.querySelector('.option-dot').classList.remove('scale-100');
+            }
+        });
+        document.getElementById('mcqNextBtn').disabled = false;
+    }
+
+    function nextMCQ() {
+        mcqQuestions[currentMcqIndex].userSelected = selectedOption;
+        
+        if (selectedOption === mcqQuestions[currentMcqIndex].correct) {
+            mcqScore++;
+        } else {
+            mcqWrong++;
+        }
+
+        currentMcqIndex++;
+        if (currentMcqIndex < mcqQuestions.length) {
+            selectedOption = null;
+            renderMCQ();
+        } else {
+            showMCQResults();
+        }
+    }
+
+    function showMCQResults() {
+        clearInterval(quizInterval);
+        document.getElementById('mcqCard').classList.add('hidden');
+        document.getElementById('mcqResults').classList.remove('hidden');
+        
+        document.getElementById('mcqCorrectCount').innerText = mcqScore;
+        document.getElementById('mcqWrongCount').innerText = mcqWrong;
+        const finalPercentage = Math.round((mcqScore / mcqQuestions.length) * 100);
+        document.getElementById('mcqFinalScore').innerText = finalPercentage + '%';
+
+        // Populate Review List
+        const reviewList = document.getElementById('mcqReviewList');
+        reviewList.innerHTML = mcqQuestions.map((q, i) => `
+            <div class="p-6 bg-slate-800/30 rounded-2xl border ${q.userSelected === q.correct ? 'border-success/20' : 'border-danger/20'}">
+                <p class="text-sm font-bold text-white mb-4">Q${i+1}: ${q.q}</p>
+                <div class="space-y-2">
+                    <p class="text-xs ${q.userSelected === q.correct ? 'text-success' : 'text-danger'} font-medium">
+                        Your Answer: ${q.options[q.userSelected] || 'No answer'}
+                    </p>
+                    ${q.userSelected !== q.correct ? `
+                    <p class="text-xs text-slate-400 font-medium">
+                        Correct Answer: <span class="text-success">${q.options[q.correct]}</span>
+                    </p>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function retryQuiz() {
+        currentMcqIndex = 0;
+        mcqScore = 0;
+        mcqWrong = 0;
+        quizTimeLeft = 600;
+        document.getElementById('mcqCard').classList.remove('hidden');
+        document.getElementById('mcqResults').classList.add('hidden');
+        fetchMCQQuestions();
+        startQuizTimer();
+    }
+
+    function startQuizTimer() {
+        quizInterval = setInterval(() => {
+            quizTimeLeft--;
+            const mins = Math.floor(quizTimeLeft / 60);
+            const secs = quizTimeLeft % 60;
+            document.getElementById('quizTimer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+            if (quizTimeLeft <= 0) {
+                clearInterval(quizInterval);
+                showMCQResults();
+            }
+        }, 1000);
+    }
+
+    // Check for URL hash to start MCQ directly
+    window.addEventListener('load', () => {
+        if (window.location.hash === '#mcq') {
+            startMCQ();
+        }
+    });
+</script>
+
+</body>
+</html>
