@@ -21,12 +21,13 @@ def login_required(f):
 # Database connection
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="mdsamim9128",
-        database="ai_interview"
+        host="mysql-357474b6-mdsamim8321-d050.d.aivencloud.com",
+        port=16348,
+        user="avnadmin",
+        password="AVNS_7ssf7Tjqhv4FtyLVrZ1",
+        database="defaultdb",
+        ssl_mode="REQUIRED"
     )
-
 def ensure_table_questions(cursor):
     cursor.execute(
         """
